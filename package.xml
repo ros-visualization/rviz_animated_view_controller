@@ -1,0 +1,25 @@
+<package>
+  <name>rviz_animated_view_controller</name>
+  <version>0.3.5</version>
+  <description>A rviz view controller featuring smooth transitions.</description>
+  <author email="aleeper@stanford.edu">Adam Leeper</author>
+  <maintainer email="aleeper@stanford.edu">Adam Leeper</maintainer>
+
+  <license>BSD</license>  
+  <url>http://ros.org/wiki/rviz_animated_view_controller</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>view_controller_msgs</build_depend>
+  <build_depend>rviz</build_depend>
+  <build_depend>pluginlib</build_depend>
+
+  <run_depend>view_controller_msgs</run_depend>
+  <run_depend>rviz</run_depend>
+  <run_depend>pluginlib</run_depend>
+
+  <export>
+    <rviz plugin="${prefix}/plugin_description.xml"/>
+  </export>
+
+</package>
