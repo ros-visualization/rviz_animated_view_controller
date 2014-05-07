@@ -781,4 +781,4 @@ void AnimatedViewController::move_eye( float x, float y, float z )
 } // end namespace rviz
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_DECLARE_CLASS( rviz_animated_view_controller, Animated, rviz_animated_view_controller::AnimatedViewController, rviz::ViewController )
+PLUGINLIB_EXPORT_CLASS( rviz_animated_view_controller::AnimatedViewController, rviz::ViewController )
