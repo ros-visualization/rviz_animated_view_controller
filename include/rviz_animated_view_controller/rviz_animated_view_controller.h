@@ -239,6 +239,6 @@ protected:    //members
 
 };
 
-} // end namespace rviz
+}  // namespace rviz_animated_view_controller
 
-#endif // RVIZ_VIEW_CONTROLLER_H
+#endif // RVIZ_ANIMATED_VIEW_CONTROLLER_H
