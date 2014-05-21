@@ -2,8 +2,8 @@
 Changelog for package rviz_animated_view_controller
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2014-05-20)
+------------------
 * force package version
 * add demo launch file
 * update urls in package.xml
