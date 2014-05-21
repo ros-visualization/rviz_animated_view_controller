@@ -1,11 +1,11 @@
 <package>
   <name>rviz_animated_view_controller</name>
-  <version>0.3.5</version>
+  <version>0.1.0</version>
   <description>A rviz view controller featuring smooth transitions.</description>
   <author email="adamleeper@gmail.com">Adam Leeper</author>
   <maintainer email="adamleeper@gmail.com">Adam Leeper</maintainer>
 
-  <license>BSD</license>  
+  <license>BSD</license>
   <url type="website">http://ros.org/wiki/rviz_animated_view_controller</url>
   <url type="repository">https://github.com/ros-visualization/rviz_animated_view_controller</url>
   <url type="bugtracker">https://github.com/ros-visualization/rviz_animated_view_controller/issues</url>
