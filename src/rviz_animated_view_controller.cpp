@@ -129,6 +129,10 @@ AnimatedViewController::AnimatedViewController()
   camera_placement_topic_property_ = new RosTopicProperty("Placement Topic", "/rviz/camera_placement",
                                                           QString::fromStdString(ros::message_traits::datatype<view_controller_msgs::CameraPlacement>() ),
                                                           "Topic for CameraPlacement messages", this, SLOT(updateTopics()));
+  
+  camera_placement_publish_topic_property_ = new RosTopicProperty("Placement Publish Topic", "/rviz/current_camera_placement",
+                                                          QString::fromStdString(ros::message_traits::datatype<view_controller_msgs::CameraPlacement>() ),
+                                                          "Publishing Topic for CameraPlacement messages", this, SLOT(updatePublishTopics()));
 
 //  camera_placement_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_placement_trajectory",
 //                                                          QString::fromStdString(ros::message_traits::datatype<view_controller_msgs::CameraPlacementTrajectory>() ),
@@ -141,6 +145,43 @@ AnimatedViewController::~AnimatedViewController()
     context_->getSceneManager()->destroySceneNode( attached_scene_node_ );
 }
 
+void AnimatedViewController::updatePublishTopics()
+{
+  placement_publisher_ = nh_.advertise<view_controller_msgs::CameraPlacement>
+    (camera_placement_publish_topic_property_->getStdString(), 1);
+}
+
+void AnimatedViewController::publishCurrentPlacement()
+{
+  view_controller_msgs::CameraPlacement msg;
+  ros::Time now = ros::Time::now();
+  msg.target_frame = attached_frame_property_->getFrameStd();
+  std::string fixed_frame = context_->getFixedFrame().toStdString();
+  // eye
+  msg.eye.header.stamp = now;
+  msg.eye.header.frame_id = fixed_frame;
+  Ogre::Vector3 eye = eye_point_property_->getVector();
+  msg.eye.point.x = eye[0];
+  msg.eye.point.y = eye[1];
+  msg.eye.point.z = eye[2];
+  // focus
+  msg.focus.header.stamp = now;
+  msg.focus.header.frame_id = fixed_frame;
+  Ogre::Vector3 focus = focus_point_property_->getVector();
+  msg.focus.point.x = focus[0];
+  msg.focus.point.y = focus[1];
+  msg.focus.point.z = focus[2];
+  // up
+  msg.up.header.stamp = now;
+  msg.up.header.frame_id = fixed_frame;
+  Ogre::Vector3 up = up_vector_property_->getVector();
+  msg.up.vector.x = up[0];
+  msg.up.vector.y = up[1];
+  msg.up.vector.z = up[2];
+
+  placement_publisher_.publish(msg);
+}
+  
 void AnimatedViewController::updateTopics()
 {
 //  trajectory_subscriber_ = nh_.subscribe<view_controller_msgs::CameraPlacementTrajectory>
@@ -183,7 +224,7 @@ void AnimatedViewController::onActivate()
 
   // Only do this once activated!
   updateTopics();
-
+  updatePublishTopics();
 }
 
 void AnimatedViewController::connectPositionProperties()
@@ -427,6 +468,7 @@ void AnimatedViewController::handleMouseEvent(ViewportMouseEvent& event)
 
   if (moved)
   {
+    publishCurrentPlacement();
     context_->queueRender();
   }
 }

@@ -191,11 +191,13 @@ protected:  //methods
 
   float getDistanceFromCameraToFocalPoint(); ///< Return the distance between camera and focal point.
 
+  void publishCurrentPlacement();
+  
   Ogre::Quaternion getOrientation(); ///< Return a Quaternion
 
 protected Q_SLOTS:
   void updateTopics();
-
+  void updatePublishTopics();
 
 protected:    //members
 
@@ -212,6 +214,7 @@ protected:    //members
   rviz::FloatProperty* default_transition_time_property_; ///< A default time for any animation requests.
 
   rviz::RosTopicProperty* camera_placement_topic_property_;
+  rviz::RosTopicProperty* camera_placement_publish_topic_property_;
 //  rviz::RosTopicProperty* camera_placement_trajectory_topic_property_;
 
   rviz::TfFrameProperty* attached_frame_property_;
@@ -237,6 +240,7 @@ protected:    //members
 //  ros::Subscriber trajectory_subscriber_;
   ros::Subscriber placement_subscriber_;
 
+  ros::Publisher placement_publisher_;
 };
 
 }  // namespace rviz_animated_view_controller
