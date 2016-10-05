@@ -10,8 +10,10 @@ find_package(PkgConfig)
 pkg_check_modules(OGRE OGRE)
 
 # Qt Stuff
-set(CMAKE_AUTOMOC ON)
-find_package(Qt5Widgets REQUIRED)
+#set(CMAKE_AUTOMOC ON)
+#set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+find_package(Qt5 COMPONENTS Gui)
 
 add_definitions(-DQT_NO_KEYWORDS)
 
@@ -28,20 +30,27 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS view_controller_msgs
-  )
+)
+
+qt5_wrap_cpp(MOC_FILES
+  include/${PROJECT_NAME}/rviz_animated_view_controller.h
+)
 
 include_directories(include
                     ${catkin_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS}
                     ${OGRE_INCLUDE_DIRS}
-                    ${OPENGL_INCLUDE_DIR}
+                    ${OPENGL_INCLUDE_DIR}                                        
+                    ${Qt5Gui_INCLUDE_DIRS}
                     ${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(${PROJECT_NAME}
-    src/rviz_animated_view_controller.cpp)
+    src/rviz_animated_view_controller.cpp
+    ${MOC_FILES}
+    )
 
 target_link_libraries(${PROJECT_NAME} ${OGRE_LIBRARIES}
-                                      ${catkin_LIBRARIES} ${Boost_LIBRARIES} Qt5::Widgets)
+                                      ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${Qt5Gui_LIBRARIES})
 
 install(DIRECTORY include/${PROJECT_NAME}/
         DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION} PATTERN ".svn" EXCLUDE)
