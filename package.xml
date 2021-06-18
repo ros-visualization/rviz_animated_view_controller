@@ -3,7 +3,7 @@
   <version>0.1.1</version>
   <description>A rviz view controller featuring smooth transitions.</description>
   <author email="adamleeper@gmail.com">Adam Leeper</author>
-  <maintainer email="adamleeper@gmail.com">Adam Leeper</maintainer>
+  <maintainer email="evanflynn.msu@gmail.com">Evan Flynn</maintainer>
 
   <license>BSD</license>
   <url type="website">http://ros.org/wiki/rviz_animated_view_controller</url>
