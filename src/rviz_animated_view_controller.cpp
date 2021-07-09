@@ -141,6 +141,8 @@ AnimatedViewController::AnimatedViewController()
                                                              ros::message_traits::datatype<view_controller_msgs::CameraTrajectory>()),
                                                            "Topic for CameraTrajectory messages", this,
                                                            SLOT(updateTopics()));
+
+  initializePublishers();
 }
 
 AnimatedViewController::~AnimatedViewController()
@@ -158,6 +160,11 @@ void AnimatedViewController::updateTopics()
   trajectory_subscriber_ = nh_.subscribe<view_controller_msgs::CameraTrajectory>
                                 (camera_trajectory_topic_property_->getStdString(), 1,
                                  boost::bind(&AnimatedViewController::cameraTrajectoryCallback, this, _1));
+}
+
+void AnimatedViewController::initializePublishers()
+{
+  finished_animation_publisher_ = nh_.advertise<std_msgs::Bool>("/rviz/finished_animation", 1);
 }
 
 void AnimatedViewController::onInitialize()
@@ -551,7 +558,14 @@ void AnimatedViewController::cancelTransition()
 
   cam_movements_buffer_.clear();
   rendered_frames_counter_ = 0;
-  render_frame_by_frame_ = false;
+
+  if(render_frame_by_frame_)
+  {
+    std_msgs::Bool finished_animation;
+    finished_animation.data = 1;  // set to true, but std_msgs::Bool is uint8 internally
+    finished_animation_publisher_.publish(finished_animation);
+    render_frame_by_frame_ = false;
+  }
 }
 
 void AnimatedViewController::cameraPlacementCallback(const CameraPlacementConstPtr &cp_ptr)

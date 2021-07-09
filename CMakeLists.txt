@@ -13,6 +13,7 @@ find_package(OpenGL REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
  rviz
  pluginlib
+ std_msgs
  view_controller_msgs
 )
 
@@ -46,7 +47,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS view_controller_msgs
+  CATKIN_DEPENDS std_msgs view_controller_msgs
   )
 
 include_directories(include

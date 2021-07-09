@@ -39,6 +39,8 @@
 #include <ros/subscriber.h>
 #include <ros/ros.h>
 
+#include <std_msgs/Bool.h>
+
 #include <view_controller_msgs/CameraMovement.h>
 #include <view_controller_msgs/CameraPlacement.h>
 #include <view_controller_msgs/CameraTrajectory.h>
@@ -99,6 +101,8 @@ public:
 
   AnimatedViewController();
   virtual ~AnimatedViewController();
+
+  void initializePublishers();
 
   /** @brief Do subclass-specific initialization.  Called by
    * ViewController::initialize after context_ and camera_ are set.
@@ -328,6 +332,8 @@ protected:    //members
   
   ros::Subscriber placement_subscriber_;
   ros::Subscriber trajectory_subscriber_;
+
+  ros::Publisher finished_animation_publisher_;
 
   bool render_frame_by_frame_;
   int target_fps_;
