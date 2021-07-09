@@ -32,12 +32,18 @@
 #ifndef RVIZ_ANIMATED_VIEW_CONTROLLER_H
 #define RVIZ_ANIMATED_VIEW_CONTROLLER_H
 
+#include <boost/circular_buffer.hpp>
+
 #include "rviz/view_controller.h"
 
 #include <ros/subscriber.h>
 #include <ros/ros.h>
 
-#include "view_controller_msgs/CameraPlacement.h"
+#include <std_msgs/Bool.h>
+
+#include <view_controller_msgs/CameraMovement.h>
+#include <view_controller_msgs/CameraPlacement.h>
+#include <view_controller_msgs/CameraTrajectory.h>
 
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
@@ -66,8 +72,37 @@ public:
   enum { TRANSITION_LINEAR = 0,
          TRANSITION_SPHERICAL};
 
+  struct OgreCameraMovement
+  {
+    OgreCameraMovement(){};
+
+    OgreCameraMovement(const Ogre::Vector3& eye,
+                       const Ogre::Vector3& focus,
+                       const Ogre::Vector3& up,
+                       const ros::Duration& transition_duration,
+                       const uint8_t interpolation_speed)
+      : eye(eye)
+        , focus(focus)
+        , up(up)
+        , transition_duration(transition_duration)
+        , interpolation_speed(interpolation_speed)
+    {
+    }
+
+    Ogre::Vector3 eye;
+    Ogre::Vector3 focus;
+    Ogre::Vector3 up;
+
+    ros::Duration transition_duration;
+    uint8_t interpolation_speed;
+  };
+
+  typedef boost::circular_buffer<OgreCameraMovement> BufferCamMovements;
+
   AnimatedViewController();
   virtual ~AnimatedViewController();
+
+  void initializePublishers();
 
   /** @brief Do subclass-specific initialization.  Called by
    * ViewController::initialize after context_ and camera_ are set.
@@ -153,6 +188,47 @@ protected:  //methods
    * is active. Override with code that needs to run repeatedly. */
   virtual void update(float dt, float ros_dt);
 
+  /** @brief Returns true if buffer contains at least one start and end pose needed for one movement. */
+  bool isMovementAvailable(){ return cam_movements_buffer_.size() >= 2; };
+
+  /** @brief Computes the fraction of time we already used for the current movement. 
+   * 
+   * If we are rendering frame by frame we compute the passed time counting the frames we already rendered.
+   * Dividing by the total number of frames we want to render for the current transition results in the progress.
+   * 
+   * @params[in] transition_duration    total duration of the current movement.
+   * 
+   * @returns Relative progress in time as a float between 0 and 1.
+   */
+  double computeRelativeProgressInTime(const ros::Duration& transition_duration);
+  
+  /** @brief Convert the relative progress in time to the corresponding relative progress in space wrt. the interpolation speed profile.
+   *
+   * Example: 
+   *   The camera has to move from point A to point B in a duration D. 
+   *   The camera should accelerate slowly and arrive at full speed - RISING speed profile. 
+   *   At exactly half of the duration D the camera wouldn't be right in the middle between A and B, because it needed 
+   *   time to accelerate. 
+   *   This method converts the relative progress in time specified by a number between zero and one, to the relative
+   *   progress in space as a number between zero and one. 
+   *   
+   * Interpolation speed profiles:
+   * RISING    = 0 # Speed of the camera rises smoothly - resembles the first quarter of a sinus wave.
+   * DECLINING = 1 # Speed of the camera declines smoothly - resembles the second quarter of a sinus wave.
+   * FULL      = 2 # Camera is always at full speed - depending on transition_duration.
+   * WAVE      = 3 # RISING and DECLINING concatenated in one movement.
+   * 
+   * @params[in] relative_progress_in_time  the relative progress in time, between 0 and 1.
+   * @params[in] interpolation_speed        speed profile.
+   * 
+   * @returns relative progress in space as a float between 0 and 1.
+   */
+  float computeRelativeProgressInSpace(double relative_progress_in_time,
+                                       uint8_t interpolation_speed);
+
+  /** @brief Updates the transition_start_time_ and resets the rendered_frames_counter_ for next movement. */
+  void prepareNextMovement(const ros::Duration& previous_transition_duration);
+  
   /** @brief Convenience function; connects the signals/slots for position properties. */
   void connectPositionProperties();
 
@@ -169,16 +245,40 @@ protected:  //methods
   void updateAttachedSceneNode();
 
   void cameraPlacementCallback(const view_controller_msgs::CameraPlacementConstPtr &cp_ptr);
-  //void cameraPlacementTrajectoryCallback(const view_controller_msgs::CameraPlacementTrajectoryConstPtr &cptptr);
-  void transformCameraPlacementToAttachedFrame(view_controller_msgs::CameraPlacement &cp);
-
+  
+  /** @brief Initiate camera motion from incoming CameraTrajectory.
+   *
+   * @param[in] ct_ptr  incoming CameraTrajectory msg.
+   */
+  void cameraTrajectoryCallback(const view_controller_msgs::CameraTrajectoryConstPtr& ct_ptr);
+  
+  /** @brief Transforms the camera defined by eye, focus and up into the attached frame.
+   *
+   * @param[in,out] eye     position of the camera.
+   * @param[in,out] focus   focus point of the camera.
+   * @param[in,out] up      vector pointing up from the camera.
+   */
+  void transformCameraToAttachedFrame(geometry_msgs::PointStamped& eye,
+                                      geometry_msgs::PointStamped& focus,
+                                      geometry_msgs::Vector3Stamped& up);
+  
   //void setUpVectorPropertyModeDependent( const Ogre::Vector3 &vector );
 
   void setPropertiesFromCamera( Ogre::Camera* source_camera );
 
-  /** @brief Begins a camera movement animation to the given goal points. */
-  void beginNewTransition(const Ogre::Vector3 &eye, const Ogre::Vector3 &focus, const Ogre::Vector3 &up,
-                          const ros::Duration &transition_time);
+  /** @brief Begins a camera movement animation to the given goal point.
+   *
+   * @param[in] eye                     goal position of camera.
+   * @param[in] focus                   goal focus point of camera.
+   * @param[in] up                      goal vector of camera pointing up.
+   * @param[in] transition_duration     duration needed for transition.
+   * @param[in] interpolation_speed     the interpolation speed profile.
+   */
+  void beginNewTransition(const Ogre::Vector3& eye,
+                          const Ogre::Vector3& focus,
+                          const Ogre::Vector3& up,
+                          ros::Duration transition_duration,
+                          uint8_t interpolation_speed = view_controller_msgs::CameraMovement::WAVE);
 
   /** @brief Cancels any currently active camera movement. */
   void cancelTransition();
@@ -212,7 +312,7 @@ protected:    //members
   rviz::FloatProperty* default_transition_time_property_; ///< A default time for any animation requests.
 
   rviz::RosTopicProperty* camera_placement_topic_property_;
-//  rviz::RosTopicProperty* camera_placement_trajectory_topic_property_;
+  rviz::RosTopicProperty* camera_trajectory_topic_property_;
 
   rviz::TfFrameProperty* attached_frame_property_;
   Ogre::SceneNode* attached_scene_node_;
@@ -222,21 +322,22 @@ protected:    //members
 
   // Variables used during animation
   bool animate_;
-  Ogre::Vector3 start_position_, goal_position_;
-  Ogre::Vector3 start_focus_, goal_focus_;
-  Ogre::Vector3 start_up_, goal_up_;
-  ros::Time trajectory_start_time_;
-  ros::Time transition_start_time_;
-  ros::Duration current_transition_duration_;
+  ros::WallTime transition_start_time_;
+  BufferCamMovements cam_movements_buffer_;
 
   rviz::Shape* focal_shape_;    ///< A small ellipsoid to show the focus point.
   bool dragging_;         ///< A flag indicating the dragging state of the mouse.
 
   QCursor interaction_disabled_cursor_;         ///< A cursor for indicating mouse interaction is disabled.
   
-//  ros::Subscriber trajectory_subscriber_;
   ros::Subscriber placement_subscriber_;
+  ros::Subscriber trajectory_subscriber_;
 
+  ros::Publisher finished_animation_publisher_;
+
+  bool render_frame_by_frame_;
+  int target_fps_;
+  int rendered_frames_counter_;
 };
 
 }  // namespace rviz_animated_view_controller
