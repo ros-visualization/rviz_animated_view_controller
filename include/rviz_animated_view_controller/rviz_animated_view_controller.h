@@ -189,6 +189,9 @@ protected:  //methods
 
   /** @brief Computes the fraction of time we already used for the current movement. 
    * 
+   * If we are rendering frame by frame we compute the passed time counting the frames we already rendered.
+   * Dividing by the total number of frames we want to render for the current transition results in the progress.
+   * 
    * @params[in] transition_duration    total duration of the current movement.
    * 
    * @returns Relative progress in time as a float between 0 and 1.
@@ -218,6 +221,8 @@ protected:  //methods
    */
   float computeRelativeProgressInSpace(double relative_progress_in_time,
                                        uint8_t interpolation_speed);
+
+  /** @brief Updates the transition_start_time_ and resets the rendered_frames_counter_ for next movement. */
   void prepareNextMovement(const ros::Duration& previous_transition_duration);
   
   /** @brief Convenience function; connects the signals/slots for position properties. */
@@ -324,6 +329,9 @@ protected:    //members
   ros::Subscriber placement_subscriber_;
   ros::Subscriber trajectory_subscriber_;
 
+  bool render_frame_by_frame_;
+  int target_fps_;
+  int rendered_frames_counter_;
 };
 
 }  // namespace rviz_animated_view_controller

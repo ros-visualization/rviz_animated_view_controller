@@ -96,6 +96,9 @@ AnimatedViewController::AnimatedViewController()
     , cam_movements_buffer_(100)
     , animate_(false)
     , dragging_(false)
+    , render_frame_by_frame_(false)
+    , target_fps_(60)
+    , rendered_frames_counter_(0)
 {
   interaction_disabled_cursor_ = makeIconCursor( "package://rviz/icons/forbidden.svg" );
 
@@ -547,6 +550,8 @@ void AnimatedViewController::cancelTransition()
   animate_ = false;
 
   cam_movements_buffer_.clear();
+  rendered_frames_counter_ = 0;
+  render_frame_by_frame_ = false;
 }
 
 void AnimatedViewController::cameraPlacementCallback(const CameraPlacementConstPtr &cp_ptr)
@@ -606,6 +611,11 @@ void AnimatedViewController::cameraTrajectoryCallback(const view_controller_msgs
     interaction_mode_property_->setStdString(name);
   }
 
+  if(ct.render_frame_by_frame > 0)
+  {
+    render_frame_by_frame_ = true;
+    target_fps_ = static_cast<int>(ct.frames_per_second);
+  }
 
   for(auto& cam_movement : ct.trajectory)
   {
@@ -744,8 +754,17 @@ void AnimatedViewController::update(float dt, float ros_dt)
 
 double AnimatedViewController::computeRelativeProgressInTime(const ros::Duration& transition_duration)
 {
-  ros::WallDuration duration_from_start = ros::WallTime::now() - transition_start_time_;
-  double relative_progress_in_time = duration_from_start.toSec() / transition_duration.toSec();
+  double relative_progress_in_time = 0.0;
+  if(render_frame_by_frame_)
+  {
+    relative_progress_in_time = rendered_frames_counter_ / (target_fps_ * transition_duration.toSec());
+    rendered_frames_counter_++;
+  }
+  else
+  {
+    ros::WallDuration duration_from_start = ros::WallTime::now() - transition_start_time_;
+    relative_progress_in_time = duration_from_start.toSec() / transition_duration.toSec();
+  }
   return relative_progress_in_time;
 }
 
@@ -769,6 +788,7 @@ float AnimatedViewController::computeRelativeProgressInSpace(double relative_pro
 void AnimatedViewController::prepareNextMovement(const ros::Duration& previous_transition_duration)
 {
   transition_start_time_ += ros::WallDuration(previous_transition_duration.toSec());
+  rendered_frames_counter_ = 0;
 }
 
 void AnimatedViewController::updateCamera()
