@@ -170,8 +170,17 @@ protected:  //methods
 
   void cameraPlacementCallback(const view_controller_msgs::CameraPlacementConstPtr &cp_ptr);
   //void cameraPlacementTrajectoryCallback(const view_controller_msgs::CameraPlacementTrajectoryConstPtr &cptptr);
-  void transformCameraPlacementToAttachedFrame(view_controller_msgs::CameraPlacement &cp);
-
+  
+  /** @brief Transforms the camera defined by eye, focus and up into the attached frame.
+   *
+   * @param[in,out] eye     position of the camera.
+   * @param[in,out] focus   focus point of the camera.
+   * @param[in,out] up      vector pointing up from the camera.
+   */
+  void transformCameraToAttachedFrame(geometry_msgs::PointStamped& eye,
+                                      geometry_msgs::PointStamped& focus,
+                                      geometry_msgs::Vector3Stamped& up);
+  
   //void setUpVectorPropertyModeDependent( const Ogre::Vector3 &vector );
 
   void setPropertiesFromCamera( Ogre::Camera* source_camera );

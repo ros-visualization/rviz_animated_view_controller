@@ -561,7 +561,9 @@ void AnimatedViewController::cameraPlacementCallback(const CameraPlacementConstP
   if(cp.time_from_start.toSec() >= 0)
   {
     ROS_DEBUG_STREAM("Received a camera placement request! \n" << cp);
-    transformCameraPlacementToAttachedFrame(cp);
+    transformCameraToAttachedFrame(cp.eye,
+                                   cp.focus,
+                                   cp.up);
     ROS_DEBUG_STREAM("After transform, we have \n" << cp);
 
     Ogre::Vector3 eye = vectorFromMsg(cp.eye.point);
@@ -608,31 +610,31 @@ void AnimatedViewController::cameraPlacementCallback(const CameraPlacementConstP
 //  beginNewTransition(eye, focus, up, cp.time_from_start);
 //}
 
-void AnimatedViewController::transformCameraPlacementToAttachedFrame(CameraPlacement &cp)
+void AnimatedViewController::transformCameraToAttachedFrame(geometry_msgs::PointStamped& eye,
+                                                            geometry_msgs::PointStamped& focus,
+                                                            geometry_msgs::Vector3Stamped& up)
 {
-  Ogre::Vector3 position_fixed_eye, position_fixed_focus, position_fixed_up; // position_fixed_attached;
-  Ogre::Quaternion rotation_fixed_eye, rotation_fixed_focus, rotation_fixed_up; // rotation_fixed_attached;
+  Ogre::Vector3 position_fixed_eye, position_fixed_focus, position_fixed_up;
+  Ogre::Quaternion rotation_fixed_eye, rotation_fixed_focus, rotation_fixed_up;
 
-  context_->getFrameManager()->getTransform(cp.eye.header.frame_id, ros::Time(0), position_fixed_eye, rotation_fixed_eye);
-  context_->getFrameManager()->getTransform(cp.focus.header.frame_id,  ros::Time(0), position_fixed_focus, rotation_fixed_focus);
-  context_->getFrameManager()->getTransform(cp.up.header.frame_id,  ros::Time(0), position_fixed_up, rotation_fixed_up);
-  //context_->getFrameManager()->getTransform(attached_frame_property_->getStdString(),  ros::Time(0), position_fixed_attached, rotation_fixed_attached);
+  context_->getFrameManager()->getTransform(eye.header.frame_id,   ros::Time(0), position_fixed_eye,   rotation_fixed_eye);
+  context_->getFrameManager()->getTransform(focus.header.frame_id, ros::Time(0), position_fixed_focus, rotation_fixed_focus);
+  context_->getFrameManager()->getTransform(up.header.frame_id,    ros::Time(0), position_fixed_up,    rotation_fixed_up);
 
-  Ogre::Vector3 eye = vectorFromMsg(cp.eye.point); 
-  Ogre::Vector3 focus = vectorFromMsg(cp.focus.point); 
-  Ogre::Vector3 up = vectorFromMsg(cp.up.vector); 
+  Ogre::Vector3 ogre_eye = vectorFromMsg(eye.point);
+  Ogre::Vector3 ogre_focus = vectorFromMsg(focus.point);
+  Ogre::Vector3 ogre_up = vectorFromMsg(up.vector);
 
-  eye = fixedFrameToAttachedLocal(position_fixed_eye + rotation_fixed_eye*eye);
-  focus = fixedFrameToAttachedLocal(position_fixed_focus + rotation_fixed_focus*focus);
-  up = reference_orientation_.Inverse()*rotation_fixed_up*up;
-  //up = rotation_fixed_up*up;
+  ogre_eye = fixedFrameToAttachedLocal(position_fixed_eye + rotation_fixed_eye * ogre_eye);
+  ogre_focus = fixedFrameToAttachedLocal(position_fixed_focus + rotation_fixed_focus * ogre_focus);
+  ogre_up = reference_orientation_.Inverse() * rotation_fixed_up * ogre_up;
 
-  cp.eye.point = pointOgreToMsg(eye);
-  cp.focus.point = pointOgreToMsg(focus);
-  cp.up.vector = vectorOgreToMsg(up);
-  cp.eye.header.frame_id = attached_frame_property_->getStdString();
-  cp.focus.header.frame_id = attached_frame_property_->getStdString();
-  cp.up.header.frame_id = attached_frame_property_->getStdString();
+  eye.point = pointOgreToMsg(ogre_eye);
+  focus.point = pointOgreToMsg(ogre_focus);
+  up.vector = vectorOgreToMsg(ogre_up);
+  eye.header.frame_id = attached_frame_property_->getStdString();
+  focus.header.frame_id = attached_frame_property_->getStdString();
+  up.header.frame_id = attached_frame_property_->getStdString();
 }
 
 
